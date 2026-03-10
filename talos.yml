@@ -1,0 +1,6 @@
+# Playbook: Provision Clusters
+- name: Provision Clusters
+  hosts: 127.0.0.1
+  connection: local
+  roles:
+    - talos

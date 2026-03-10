@@ -1,0 +1,8 @@
+.env
+
+output/**/secrets.yaml
+output/**/configs/
+
+secrets.yaml
+kubeconfig*
+talosconfig*

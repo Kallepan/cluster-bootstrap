@@ -1,0 +1,170 @@
+---
+- name: Ensure the Talos working directory exists
+  ansible.builtin.file:
+    path: "{{ talos_cluster.output_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure control-plane-patch.yaml exists
+  ansible.builtin.copy:
+    content: |
+      cluster:
+        allowSchedulingOnControlPlanes: false
+    dest: "{{ talos_cluster.output_dir }}/control-plane-patch.yaml"
+    force: false
+    mode: "0644"
+
+- name: Check if secrets file exists
+  ansible.builtin.stat:
+    path: "{{ talos_cluster.output_dir }}/secrets.yaml"
+  register: secrets_file
+
+- name: Generate Secrets for cluster
+  when: not secrets_file.stat.exists
+  ansible.builtin.command: >
+    talosctl gen secrets --output-file {{ talos_cluster.output_dir }}/secrets.yaml
+  changed_when: true
+
+- name: Check if Config file exists
+  ansible.builtin.stat:
+    path: "{{ talos_cluster.output_dir }}/configs/talosconfig"
+  register: config_file
+
+- name: Generate Config for cluster
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl gen config
+    --with-secrets {{ talos_cluster.output_dir }}/secrets.yaml
+    --config-patch @{{ talos_cluster.output_dir }}/all-patch.yaml
+    --config-patch-control-plane @{{ talos_cluster.output_dir }}/control-plane-patch.yaml
+    --config-patch-worker @{{ talos_cluster.output_dir }}/worker-patch.yaml
+    {{ talos_cluster.name }}
+    https://{{ talos_cluster.endpoint }}:6443
+    --output-dir {{ talos_cluster.output_dir }}/configs
+    --install-image {{ talos_factory_image_url }}
+    --force
+  changed_when: true
+  register: config_generated
+
+- name: Configure talosconfig endpoint
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    config endpoint {{ talos_cluster.control_nodes | map(attribute='ip') | join(' ') }}
+  changed_when: true
+
+- name: Configure talosconfig default node
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    config node {{ talos_cluster.control_nodes[0].ip }}
+  changed_when: true
+
+- name: Apply config to control plane nodes
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl apply-config --insecure
+    --nodes {{ control_plane.ip }}
+    --file {{ talos_cluster.output_dir }}/configs/controlplane.yaml
+  loop: "{{ talos_cluster.control_nodes }}"
+  loop_control:
+    loop_var: control_plane
+  changed_when: true
+
+- name: Wait for control plane nodes to respond
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    --nodes {{ control_plane.ip }} version
+  loop: "{{ talos_cluster.control_nodes }}"
+  loop_control:
+    loop_var: control_plane
+  retries: 30
+  delay: 10
+  until: cp_version.rc == 0
+  register: cp_version
+  changed_when: false
+
+- name: Apply config to worker nodes
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl apply-config --insecure
+    --nodes {{ worker_node.ip }}
+    --file {{ talos_cluster.output_dir }}/configs/worker.yaml
+  loop: "{{ talos_cluster.worker_nodes }}"
+  loop_control:
+    loop_var: worker_node
+  changed_when: true
+
+- name: Wait for worker nodes to respond
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    --nodes {{ worker_node.ip }} version
+  loop: "{{ talos_cluster.worker_nodes }}"
+  loop_control:
+    loop_var: worker_node
+  retries: 30
+  delay: 10
+  until: worker_version.rc == 0
+  register: worker_version
+  changed_when: false
+
+- name: Bootstrap the cluster
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    --nodes {{ talos_cluster.control_nodes[0].ip }} bootstrap
+  changed_when: true
+
+- name: Wait for Kubernetes API to be available
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    --nodes {{ talos_cluster.control_nodes[0].ip }} service kubelet status
+  retries: 30
+  delay: 10
+  until: kubelet_status.rc == 0
+  register: kubelet_status
+  changed_when: false
+
+- name: Generate kubeconfig
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig
+    kubeconfig {{ talos_cluster.output_dir }}/configs/kubeconfig --force
+  retries: 10
+  delay: 10
+  until: kubeconfig_result.rc == 0
+  register: kubeconfig_result
+  changed_when: true
+
+- name: Wait for all nodes to be ready
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ talos_cluster.output_dir }}/configs/kubeconfig
+    wait --for=condition=Ready nodes --all --timeout=600s
+  register: nodes_ready
+  failed_when: false
+  changed_when: false
+
+- name: Display cluster info
+  when: not config_file.stat.exists
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ talos_cluster.output_dir }}/configs/kubeconfig get nodes -o wide
+  register: cluster_nodes
+  failed_when: false
+  changed_when: false
+
+- name: Show cluster status
+  when: not config_file.stat.exists and cluster_nodes.rc == 0
+  ansible.builtin.debug:
+    msg: "{{ cluster_nodes.stdout_lines }}"
+
+- name: Show connection error if any
+  when: not config_file.stat.exists and (nodes_ready.rc != 0 or cluster_nodes.rc != 0)
+  ansible.builtin.debug:
+    msg:
+      - "Warning: Could not connect to Kubernetes API"
+      - "This may be because the kubeconfig server URL is not accessible from this host"
+      - "Nodes may still be healthy. Check directly with: talosctl --talosconfig {{ talos_cluster.output_dir }}/configs/talosconfig get members"

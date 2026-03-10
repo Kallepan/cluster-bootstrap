@@ -1,0 +1,20 @@
+talos_clusters:
+  - name: service
+    endpoint: svc.home.arpa
+    control_nodes:
+      - ip: "10.10.20.21"
+      - ip: "10.10.20.22"
+      - ip: "10.10.20.23"
+    worker_nodes:
+      - ip: "10.10.20.31"
+      - ip: "10.10.20.32"
+      - ip: "10.10.20.33"
+    output_dir: output/service
+    run_setup: false
+    install_cilium: false
+    upgrade_talos: true
+    upgrade_k8s: true
+
+talos_version: "v1.12.5"
+talos_k8s_version: "1.35.2"
+talos_cilium_version: "1.18.5"
