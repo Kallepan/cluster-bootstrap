@@ -12,8 +12,9 @@ talos_clusters:
     output_dir: output/service
     run_setup: false
     install_cilium: false
-    upgrade_talos: true
-    upgrade_k8s: true
+    install_argocd: true
+    upgrade_talos: false
+    upgrade_k8s: false
 
 talos_version: "v1.12.5"
 talos_k8s_version: "1.35.2"

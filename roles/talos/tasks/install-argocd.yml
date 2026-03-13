@@ -1,0 +1,26 @@
+- name: Wait for Kubernetes API Server
+  ansible.builtin.wait_for:
+    host: "{{ talos_cluster.endpoint }}"
+    port: 6443
+    delay: 10
+    timeout: 300
+  changed_when: false
+
+- name: Install ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: oci://ghcr.io/argoproj/argo-helm/argo-cd
+    chart_version: "9.4.10"
+    release_namespace: argocd
+    kubeconfig: "{{ talos_cluster.output_dir }}/configs/kubeconfig"
+    values:
+      global:
+        domain: "{{ talos_cluster.endpoint }}"
+      configs:
+        params:
+          server.insecure: true
+          application.namespaces: "*"
+      server:
+        ingress:
+          enabled: false
+  when: not ansible_check_mode

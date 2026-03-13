@@ -16,21 +16,28 @@
   when: talos_cluster.run_setup | default(false)
 
 - name: Include Install Cilium
-  ansible.builtin.include_tasks: install_cilium.yml
+  ansible.builtin.include_tasks: install-cilium.yml
   loop: "{{ talos_clusters }}"
   loop_control:
     loop_var: talos_cluster
   when: talos_cluster.install_cilium | default(false)
 
+- name: Include Install ArgoCD
+  ansible.builtin.include_tasks: install-argocd.yml
+  loop: "{{ talos_clusters }}"
+  loop_control:
+    loop_var: talos_cluster
+  when: talos_cluster.install_argocd | default(false)
+
 - name: Include Talos Upgrade
-  ansible.builtin.include_tasks: talos_upgrade.yml
+  ansible.builtin.include_tasks: talos-upgrade.yml
   loop: "{{ talos_clusters }}"
   loop_control:
     loop_var: talos_cluster
   when: talosconfig_file.stat.exists and talos_cluster.upgrade_talos
 
 - name: Include K8S Upgrade
-  ansible.builtin.include_tasks: k8s_upgrade.yml
+  ansible.builtin.include_tasks: k8s-upgrade.yml
   loop: "{{ talos_clusters }}"
   loop_control:
     loop_var: talos_cluster
