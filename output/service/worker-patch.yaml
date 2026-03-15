@@ -7,6 +7,13 @@ machine:
 
   kubelet:
     extraMounts:
+      - destination: /var/lib/rook
+        type: bind
+        source: /var/lib/rook
+        options:
+          - rbind
+          - rshared
+          - rw
       - destination: /var/local
         type: bind
         source: /var/local
