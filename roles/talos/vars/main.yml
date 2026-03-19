@@ -12,7 +12,7 @@ talos_clusters:
     output_dir: output/service
     run_setup: false
     install_cilium: false
-    install_argocd: true
+    install_argocd: false
     upgrade_talos: false
     upgrade_k8s: false
 
