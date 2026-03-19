@@ -1,7 +1,7 @@
 # # Description: Main tasks file for the talos role.
 # ---
 - name: Include Fetch Image
-  ansible.builtin.include_tasks: fetch_image.yml
+  ansible.builtin.include_tasks: fetch-image.yml
 
 - name: Check if talosconfig is present
   ansible.builtin.stat:
