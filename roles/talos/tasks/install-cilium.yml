@@ -21,7 +21,7 @@
     values:
       cluster:
         name: "{{ talos_cluster.name }}"
-        id: 2
+        id: "{{ talos_cluster.id }}"
       cni:
         exclusive: false
       ipam:

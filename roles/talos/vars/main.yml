@@ -1,5 +1,6 @@
 talos_clusters:
   - name: service
+    id: 2
     endpoint: svc.home.arpa
     control_nodes:
       - ip: "10.10.20.21"
@@ -11,6 +12,19 @@ talos_clusters:
       - ip: "10.10.20.33"
     output_dir: output/service
     run_setup: false
+    install_cilium: false
+    install_argocd: false
+    upgrade_talos: false
+    upgrade_k8s: false
+  - name: lab
+    id: 3
+    endpoint: lab.home.arpa
+    control_nodes:
+      - ip: "10.10.20.51"
+    worker_nodes:
+      - ip: "10.10.20.61"
+    output_dir: output/lab
+    run_setup: true
     install_cilium: false
     install_argocd: false
     upgrade_talos: false

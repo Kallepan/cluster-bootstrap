@@ -1,0 +1,9 @@
+global:
+  domain: lab.home.arpa
+configs:
+  params:
+    server.insecure: true
+    application.namespaces: "*"
+server:
+  ingress:
+    enabled: false
