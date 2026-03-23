@@ -32,4 +32,4 @@ talos_clusters:
 
 talos_version: "v1.12.5"
 talos_k8s_version: "1.35.2"
-talos_cilium_version: "1.18.5"
+talos_cilium_version: "1.19.2"
