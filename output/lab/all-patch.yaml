@@ -5,6 +5,11 @@ cluster:
       kind: Policy
       rules:
         - level: Metadata
+    extraArgs:
+      oidc-issuer-url: "https://sso.svc.home.arpa/realms/homelab"
+      oidc-client-id: "homelab"
+      oidc-username-claim: "preferred_username"
+      oidc-groups-claim: "groups"
 
   controllerManager:
     extraArgs:
