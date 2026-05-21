@@ -14,7 +14,8 @@ talos_clusters:
     run_setup: false
     install_cilium: false
     install_argocd: false
-    upgrade_talos: false
+    upgrade_talos_control: false
+    upgrade_talos_worker: false
     upgrade_k8s: false
   - name: lab
     id: 3
@@ -27,9 +28,10 @@ talos_clusters:
     run_setup: true
     install_cilium: false
     install_argocd: false
-    upgrade_talos: false
+    upgrade_talos_control: false
+    upgrade_talos_worker: false
     upgrade_k8s: false
 
-talos_version: "v1.12.5"
-talos_k8s_version: "1.35.2"
+talos_version: "v1.13.2"
+talos_k8s_version: "1.36.0"
 talos_cilium_version: "1.19.2"

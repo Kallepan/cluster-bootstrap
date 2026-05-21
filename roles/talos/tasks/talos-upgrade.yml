@@ -5,6 +5,7 @@
   loop: "{{ talos_cluster.control_nodes }}"
   loop_control:
     loop_var: control_plane
+  when: talos_cluster.upgrade_talos_control
 
 - name: Upgrade Worker Nodes
   ansible.builtin.command: >
@@ -12,3 +13,4 @@
   loop: "{{ talos_cluster.worker_nodes }}"
   loop_control:
     loop_var: worker_node
+  when: talos_cluster.upgrade_talos_worker
